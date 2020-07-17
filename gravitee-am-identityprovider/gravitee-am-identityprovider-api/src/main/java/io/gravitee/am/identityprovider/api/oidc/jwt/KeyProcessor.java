@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.am.identityprovider.api.social;
+package io.gravitee.am.identityprovider.api.oidc.jwt;
 
-import io.gravitee.am.identityprovider.api.AuthenticationProvider;
-import io.gravitee.am.identityprovider.api.common.Request;
+import com.nimbusds.jwt.proc.JWTProcessor;
+import io.gravitee.am.common.jwt.SignatureAlgorithm;
 
 /**
- * @author Titouan COMPIEGNE (titouan.compiegne at graviteesource.com)
+ * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface SocialAuthenticationProvider <T extends SocialIdentityProviderConfiguration> extends AuthenticationProvider {
+public interface KeyProcessor {
 
-    Request signInUrl(String redirectUri);
+    JWTProcessor create(SignatureAlgorithm signature);
 }

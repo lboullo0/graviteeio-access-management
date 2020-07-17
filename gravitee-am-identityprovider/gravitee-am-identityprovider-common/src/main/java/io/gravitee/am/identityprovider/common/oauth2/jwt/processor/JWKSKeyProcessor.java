@@ -13,29 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.am.identityprovider.oauth2.jwt.algo;
+package io.gravitee.am.identityprovider.common.oauth2.jwt.processor;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.JWSKeySelector;
+import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jose.proc.SecurityContext;
 import io.gravitee.am.common.jwt.SignatureAlgorithm;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public enum Signature {
-    RSA_RS256(SignatureAlgorithm.RS256),
-    RSA_RS384(SignatureAlgorithm.RS384),
-    RSA_RS512(SignatureAlgorithm.RS512),
-    HMAC_HS256(SignatureAlgorithm.HS256),
-    HMAC_HS384(SignatureAlgorithm.HS384),
-    HMAC_HS512(SignatureAlgorithm.HS512);
+public class JWKSKeyProcessor<C extends SecurityContext> extends AbstractKeyProcessor<C> {
 
-    private SignatureAlgorithm alg;
-
-    Signature(SignatureAlgorithm alg) {
-        this.alg = alg;
-    }
-
-    public SignatureAlgorithm getAlg() {
-        return alg;
+    @Override
+    JWSKeySelector<C> jwsKeySelector(JWKSource<C> jwkSource, SignatureAlgorithm signature) {
+        return new JWSVerificationKeySelector<>(JWSAlgorithm.parse(signature.getValue()), jwkSource);
     }
 }

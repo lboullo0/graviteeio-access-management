@@ -16,45 +16,59 @@
     limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
-        <groupId>io.gravitee.am.identityprovider</groupId>
         <artifactId>gravitee-am-identityprovider</artifactId>
+        <groupId>io.gravitee.am.identityprovider</groupId>
         <version>3.2.0-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>gravitee-am-identityprovider-api</artifactId>
-    <packaging>jar</packaging>
-
-    <version>3.2.0-SNAPSHOT</version>
-    <name>Gravitee IO - Access Management - Identity Provider - API</name>
+    <artifactId>gravitee-am-identityprovider-common</artifactId>
 
     <dependencies>
         <!-- Gravitee.io -->
         <dependency>
-            <groupId>io.gravitee.am.common</groupId>
-            <artifactId>gravitee-am-common</artifactId>
+            <groupId>io.gravitee.am.identityprovider</groupId>
+            <artifactId>gravitee-am-identityprovider-api</artifactId>
             <version>${project.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>io.gravitee.am.model</groupId>
-            <artifactId>gravitee-am-model</artifactId>
+            <groupId>io.gravitee.am.service</groupId>
+            <artifactId>gravitee-am-service</artifactId>
             <version>${project.version}</version>
+            <scope>provided</scope>
         </dependency>
 
+        <!-- Spring -->
         <dependency>
-            <groupId>io.gravitee.gateway</groupId>
-            <artifactId>gravitee-gateway-api</artifactId>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+            <scope>provided</scope>
         </dependency>
 
-        <!-- RxJava 2 -->
+        <!-- Jackson -->
         <dependency>
-            <groupId>io.reactivex.rxjava2</groupId>
-            <artifactId>rxjava</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Vert.x -->
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-rx-java2</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web-client</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Nimbus -->
@@ -63,5 +77,7 @@
             <artifactId>nimbus-jose-jwt</artifactId>
             <scope>provided</scope>
         </dependency>
+
     </dependencies>
+
 </project>

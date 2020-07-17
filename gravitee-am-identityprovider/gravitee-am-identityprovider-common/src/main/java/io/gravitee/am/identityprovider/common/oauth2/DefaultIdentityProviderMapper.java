@@ -13,16 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.am.identityprovider.api.social;
+package io.gravitee.am.identityprovider.common.oauth2;
 
-import io.gravitee.am.identityprovider.api.AuthenticationProvider;
-import io.gravitee.am.identityprovider.api.common.Request;
+import io.gravitee.am.identityprovider.api.IdentityProviderMapper;
+
+import java.util.Map;
 
 /**
- * @author Titouan COMPIEGNE (titouan.compiegne at graviteesource.com)
+ * @author Eric LELEU (eric.leleu at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface SocialAuthenticationProvider <T extends SocialIdentityProviderConfiguration> extends AuthenticationProvider {
+public class DefaultIdentityProviderMapper implements IdentityProviderMapper {
+    private Map<String, String> mappers;
 
-    Request signInUrl(String redirectUri);
+    public Map<String, String> getMappers() {
+        return this.mappers;
+    }
+
+    public void setMappers(Map<String, String> mappers) {
+        this.mappers = mappers;
+    }
 }

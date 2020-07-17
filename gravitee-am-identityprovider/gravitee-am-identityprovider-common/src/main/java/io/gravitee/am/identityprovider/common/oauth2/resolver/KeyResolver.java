@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.am.identityprovider.api.social;
-
-import io.gravitee.am.identityprovider.api.AuthenticationProvider;
-import io.gravitee.am.identityprovider.api.common.Request;
+package io.gravitee.am.identityprovider.common.oauth2.resolver;
 
 /**
  * @author Titouan COMPIEGNE (titouan.compiegne at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface SocialAuthenticationProvider <T extends SocialIdentityProviderConfiguration> extends AuthenticationProvider {
+public enum KeyResolver {
 
-    Request signInUrl(String redirectUri);
+    GIVEN_KEY,
+    JWKS_URL
 }

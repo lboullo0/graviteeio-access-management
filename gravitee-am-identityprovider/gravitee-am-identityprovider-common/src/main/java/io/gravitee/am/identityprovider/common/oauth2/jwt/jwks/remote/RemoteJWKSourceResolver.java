@@ -13,16 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.am.identityprovider.api.social;
+package io.gravitee.am.identityprovider.common.oauth2.jwt.jwks.remote;
 
-import io.gravitee.am.identityprovider.api.AuthenticationProvider;
-import io.gravitee.am.identityprovider.api.common.Request;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.jwk.source.RemoteJWKSet;
+import com.nimbusds.jose.proc.SecurityContext;
+import io.gravitee.am.identityprovider.api.oidc.jwt.JWKSourceResolver;
+
+import java.net.URL;
 
 /**
  * @author Titouan COMPIEGNE (titouan.compiegne at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface SocialAuthenticationProvider <T extends SocialIdentityProviderConfiguration> extends AuthenticationProvider {
+public class RemoteJWKSourceResolver<C extends SecurityContext> implements JWKSourceResolver<C> {
 
-    Request signInUrl(String redirectUri);
+    private final String url;
+
+    public RemoteJWKSourceResolver(String url) {
+        this.url = url;
+    }
+
+    @Override
+    public JWKSource<C> resolve() {
+        try {
+            return new RemoteJWKSet(new URL(url));
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 }

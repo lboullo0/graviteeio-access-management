@@ -21,11 +21,12 @@ import io.gravitee.am.identityprovider.api.Authentication;
 import io.gravitee.am.identityprovider.api.AuthenticationContext;
 import io.gravitee.am.identityprovider.api.User;
 import io.gravitee.am.identityprovider.api.common.Request;
+import io.gravitee.am.identityprovider.api.oidc.jwt.KeyResolver;
 import io.gravitee.am.identityprovider.azure.AzureADIdentityProviderConfiguration;
 import io.gravitee.am.identityprovider.azure.AzureADIdentityProviderMapper;
 import io.gravitee.am.identityprovider.azure.AzureADIdentityProviderRoleMapper;
-import io.gravitee.am.identityprovider.azure.jwt.jwks.hmac.MACJWKSourceResolver;
-import io.gravitee.am.identityprovider.azure.jwt.processor.HMACKeyProcessor;
+import io.gravitee.am.identityprovider.common.oauth2.jwt.jwks.hmac.MACJWKSourceResolver;
+import io.gravitee.am.identityprovider.common.oauth2.jwt.processor.HMACKeyProcessor;
 import io.gravitee.common.http.HttpMethod;
 import io.gravitee.common.http.HttpStatusCode;
 import io.gravitee.common.util.LinkedMultiValueMap;
@@ -71,8 +72,8 @@ public class AzureADAuthenticationProviderTest {
     @Mock
     protected HttpResponse httpResponse;
 
-    @Mock
-    private AzureADIdentityProviderConfiguration configuration;
+    @Spy
+    private AzureADIdentityProviderConfiguration configuration = new AzureADIdentityProviderConfiguration();
 
     @Mock
     private AzureADIdentityProviderMapper mapper;
@@ -112,7 +113,7 @@ public class AzureADAuthenticationProviderTest {
             event.next();
         });
 
-        HMACKeyProcessor keyProcessor = new HMACKeyProcessor();
+        HMACKeyProcessor keyProcessor = new HMACKeyProcessor<>();
         keyProcessor.setJwkSourceResolver(new MACJWKSourceResolver(secretKey));
         provider.setJwtProcessor(keyProcessor.create(SignatureAlgorithm.HS256));
     }
@@ -170,6 +171,8 @@ public class AzureADAuthenticationProviderTest {
         when(configuration.getTenantId()).thenReturn(TEST_TENANT_ID);
 
         when(authentication.getContext().get("redirect_uri")).thenReturn("https://gravitee.io");
+        when(authenticationContext.get("id_token")).thenReturn(jwt);
+
         when(httpResponse.statusCode())
                 .thenReturn(HttpStatusCode.OK_200);
         //:"eyJ0eXAiOiJKV1QiLCJub25jZSI6IkVKRG5GakxSd3FvYVBMdmJwV2FqWkdWNGZSTkh6eXpoMkU4YzdueHJLWVEiLCJhbGciOiJSUzI1NiIsIng1dCI6Imh1Tjk1SXZQZmVocTM0R3pCRFoxR1hHaXJuTSIsImtpZCI6Imh1Tjk1SXZQZmVocTM0R3pCRFoxR1hHaXJuTSJ9.eyJhdWQiOiIwMDAwMDAwMy0wMDAwLTAwMDAtYzAwMC0wMDAwMDAwMDAwMDAiLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9iNzM4OTY2NS01OGRmLTRmNGMtYTNhMy1lZDVhZGYwYWFmZDgvIiwiaWF0IjoxNTk0OTEyMjUzLCJuYmYiOjE1OTQ5MTIyNTMsImV4cCI6MTU5NDkxNjE1MywiYWNjdCI6MCwiYWNyIjoiMSIsImFpbyI6IkFTUUEyLzhRQUFBQTMxUE85ODNVUkpZVTQwS0ZWWjJYVWhSa0RWdkdUTGZLcTczV21oeVpZdlE9IiwiYW1yIjpbInB3ZCJdLCJhcHBfZGlzcGxheW5hbWUiOiJUZXN0LUVMRS1JRFAtQVpVUkUiLCJhcHBpZCI6ImU0YmQwNmJkLTBhOGItNGFlOS05ZjYzLWNmNWZiODgwMDdhMSIsImFwcGlkYWNyIjoiMSIsImZhbWlseV9uYW1lIjoiTGVsZXUiLCJnaXZlbl9uYW1lIjoiRXJpYyIsImlwYWRkciI6IjgyLjIzOC4yNTUuMTQzIiwibmFtZSI6IkVyaWMgTGVsZXUiLCJvaWQiOiI0YWUwMjM1My0yOWJlLTQyZDMtODQ5OS1kOGMzNTUyYTVjOTIiLCJwbGF0ZiI6IjE0IiwicHVpZCI6IjEwMDMyMDAwQ0Y0MDg0MDUiLCJzY3AiOiJEaXJlY3RvcnkuUmVhZC5BbGwgZW1haWwgb3BlbmlkIHByb2ZpbGUgVXNlci5SZWFkIiwic3ViIjoidmNzdmFfb1Q5M1Z0TnloZngtQXFtT1RwUG9EdzZ0ZFFkVzV1M1N5N1EtZyIsInRlbmFudF9yZWdpb25fc2NvcGUiOiJFVSIsInRpZCI6ImI3Mzg5NjY1LTU4ZGYtNGY0Yy1hM2EzLWVkNWFkZjBhYWZkOCIsInVuaXF1ZV9uYW1lIjoiZXJpYy5sZWxldUBncmF2aXRlZXNvdXJjZS5jb20iLCJ1cG4iOiJlcmljLmxlbGV1QGdyYXZpdGVlc291cmNlLmNvbSIsInV0aSI6Inl5bUdwZF9ZU0VHMklOTEVBaGZzQVEiLCJ2ZXIiOiIxLjAiLCJ4bXNfc3QiOnsic3ViIjoiQmowM3BnWUx1V3MxOXVXVUJpOXhxU21IN1JvS1A3bWpRUURtZHVWUEdoWSJ9LCJ4bXNfdGNkdCI6MTU0MDU1Njc0NH0.BsDjR_rYQAc0NjdgQLtCNc3cAsflhlOZnNdrnbEeIBrDO-VWsasrcIYACzyES611NQmPG3NTj1LR1bs5OYe8IYpgoRoVdLLirE788lpLMGudlMVi7CNuUntPZn6ca5iqlRs2PSpxrdp56BpdQcnYvTru3KEC-IKN5BLgykwo_pmMxSnsgQRyQL_38Z20ClA3IZwLW-TFQ93hLSCZxcZmpZIKhTKsseDobuif2Eq2U-uEPqYINbF38QUcW6QsCDzs3PUN6aeWV-Gr6KhxLjghTKi30EOmsY7QGU-342QFu-iq45_WC3_zU-sceFGT0ZL-97jpoXaqERWIbJVRbTeuXQ","id_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Imh1Tjk1SXZQZmVocTM0R3pCRFoxR1hHaXJuTSJ9.eyJhdWQiOiJlNGJkMDZiZC0wYThiLTRhZTktOWY2My1jZjVmYjg4MDA3YTEiLCJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vYjczODk2NjUtNThkZi00ZjRjLWEzYTMtZWQ1YWRmMGFhZmQ4L3YyLjAiLCJpYXQiOjE1OTQ5MTIyNTMsIm5iZiI6MTU5NDkxMjI1MywiZXhwIjoxNTk0OTE2MTUzLCJmYW1pbHlfbmFtZSI6IkxlbGV1IiwiZ2l2ZW5fbmFtZSI6IkVyaWMiLCJuYW1lIjoiRXJpYyBMZWxldSIsIm9pZCI6IjRhZTAyMzUzLTI5YmUtNDJkMy04NDk5LWQ4YzM1NTJhNWM5MiIsInByZWZlcnJlZF91c2VybmFtZSI6ImVyaWMubGVsZXVAZ3Jhdml0ZWVzb3VyY2UuY29tIiwic3ViIjoiQmowM3BnWUx1V3MxOXVXVUJpOXhxU21IN1JvS1A3bWpRUURtZHVWUEdoWSIsInRpZCI6ImI3Mzg5NjY1LTU4ZGYtNGY0Yy1hM2EzLWVkNWFkZjBhYWZkOCIsInV0aSI6Inl5bUdwZF9ZU0VHMklOTEVBaGZzQVEiLCJ2ZXIiOiIyLjAifQ.c3u2k8L9fE4eQ8uM5UON1BRkqsTCEIF8jULtNC4mjN7eqncOKxtodFMsPZQeHm8P5aBYWL_LxHJfndQt9XOIReQmD57KHpdzJP4ZKacdDml5uJh30_sOx09Vm5uaEc7zos52Y8xfpyRXWLIDo-oQBwBEVnQQhFN6zgI1uvMP6Gl3y0hu-iGEwZYFkRShoaljA-k18mHbLBmllyxHvf4K2oNvftK0z9sWAwpw4beHcM2k9v2fBrQv9Ygwga1w0PsrD9U62cQnQ43f9EOIugChRRdReyTI2zoJvOeyKjo9nvxDbsz47WgpzTR7YzLhE931lF2aj6gih_4IRqBBsukpjQ"}
@@ -194,6 +197,7 @@ public class AzureADAuthenticationProviderTest {
             return true;
         });
 
+        verify(authenticationContext, times(1)).set("id_token", jwt);
         verify(client, times(1)).postAbs("https://login.microsoftonline.com/"+ TEST_TENANT_ID +"/oauth2/v2.0/token");
     }
     @Test
@@ -205,6 +209,7 @@ public class AzureADAuthenticationProviderTest {
         Authentication authentication = mock(Authentication.class);
         AuthenticationContext authenticationContext = mock(AuthenticationContext.class);
         when(authentication.getContext()).thenReturn(authenticationContext);
+        when(authenticationContext.get("id_token")).thenReturn(jwt);
 
         io.gravitee.gateway.api.Request request = mock(io.gravitee.gateway.api.Request.class);
         when(authenticationContext.request()).thenReturn(request);
@@ -241,7 +246,7 @@ public class AzureADAuthenticationProviderTest {
             assertTrue(user.getRoles().contains("admin"));
             return true;
         });
-
+        verify(authenticationContext, times(1)).set("id_token", jwt);
         verify(client, times(1)).postAbs("https://login.microsoftonline.com/"+ TEST_TENANT_ID +"/oauth2/v2.0/token");
     }
 
@@ -252,6 +257,7 @@ public class AzureADAuthenticationProviderTest {
         Authentication authentication = mock(Authentication.class);
         AuthenticationContext authenticationContext = mock(AuthenticationContext.class);
         when(authentication.getContext()).thenReturn(authenticationContext);
+        when(authenticationContext.get("id_token")).thenReturn(badJwt);
 
         io.gravitee.gateway.api.Request request = mock(io.gravitee.gateway.api.Request.class);
         when(authenticationContext.request()).thenReturn(request);
@@ -280,6 +286,7 @@ public class AzureADAuthenticationProviderTest {
         obs.awaitTerminalEvent();
         obs.assertError(BadCredentialsException.class);
 
+        verify(authenticationContext, times(1)).set("id_token", badJwt);
         verify(client, times(1)).postAbs("https://login.microsoftonline.com/"+ TEST_TENANT_ID +"/oauth2/v2.0/token");
     }
 }

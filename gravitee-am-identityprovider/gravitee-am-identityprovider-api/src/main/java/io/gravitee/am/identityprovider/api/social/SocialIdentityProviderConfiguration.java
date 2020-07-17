@@ -15,14 +15,33 @@
  */
 package io.gravitee.am.identityprovider.api.social;
 
-import io.gravitee.am.identityprovider.api.AuthenticationProvider;
-import io.gravitee.am.identityprovider.api.common.Request;
+import io.gravitee.am.identityprovider.api.IdentityProviderConfiguration;
+
+import java.util.Set;
 
 /**
- * @author Titouan COMPIEGNE (titouan.compiegne at graviteesource.com)
+ * @author Eric LELEU (eric.leleu at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface SocialAuthenticationProvider <T extends SocialIdentityProviderConfiguration> extends AuthenticationProvider {
+public interface SocialIdentityProviderConfiguration extends IdentityProviderConfiguration {
+    public String getClientId();
 
-    Request signInUrl(String redirectUri);
+    public String getClientSecret();
+
+    public Set<String> getScopes();
+
+    public String getUserAuthorizationUri();
+
+    public String getAccessTokenUri();
+
+    public String getUserProfileUri();
+
+    public String getCodeParameter();
+
+    public String getResponseType();
+
+    public Integer getConnectTimeout();
+
+    public Integer getMaxPoolSize();
+
 }

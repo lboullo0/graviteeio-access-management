@@ -13,29 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.am.identityprovider.oauth2.jwt.algo;
+package io.gravitee.am.identityprovider.api.oidc;
 
 import io.gravitee.am.common.jwt.SignatureAlgorithm;
+import io.gravitee.am.identityprovider.api.oidc.jwt.KeyResolver;
+import io.gravitee.am.identityprovider.api.social.SocialIdentityProviderConfiguration;
 
 /**
- * @author David BRASSELY (david.brassely at graviteesource.com)
+ * @author Eric LELEU (eric.leleu at graviteesource.com)
  * @author GraviteeSource Team
  */
-public enum Signature {
-    RSA_RS256(SignatureAlgorithm.RS256),
-    RSA_RS384(SignatureAlgorithm.RS384),
-    RSA_RS512(SignatureAlgorithm.RS512),
-    HMAC_HS256(SignatureAlgorithm.HS256),
-    HMAC_HS384(SignatureAlgorithm.HS384),
-    HMAC_HS512(SignatureAlgorithm.HS512);
-
-    private SignatureAlgorithm alg;
-
-    Signature(SignatureAlgorithm alg) {
-        this.alg = alg;
-    }
-
-    public SignatureAlgorithm getAlg() {
-        return alg;
-    }
+public interface OpenIDConnectIdentityProviderConfiguration extends SocialIdentityProviderConfiguration {
+    public String getWellKnownUri();
+    public boolean isUseIdTokenForUserInfo();
+    public KeyResolver getPublicKeyResolver();
+    public SignatureAlgorithm getSignatureAlgorithm();
+    public String getResolverParameter();
+    public boolean isEncodeRedirectUri();
 }
