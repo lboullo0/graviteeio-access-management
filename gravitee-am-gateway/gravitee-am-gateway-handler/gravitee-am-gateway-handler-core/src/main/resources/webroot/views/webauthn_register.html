@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WebAuthn Login</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" th:href="@{assets/material/material.blue_grey-blue.min.css}">
+    <link rel="stylesheet" th:href="@{assets/material/material.icons.css}">
+    <link rel="stylesheet" th:href="@{assets/font-awesome/css/font-awesome.min.css}">
+
+    <!-- Favicon and touch icons -->
+    <link rel="shortcut icon" th:href="@{assets/ico/favicon.ico}">
+
+    <style>
+        .column {
+            height: 350px;
+        }
+        .row {
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+
+        .alert {
+            padding: 20px;
+            color: white;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .alert.info {
+            background: #2196F3;
+        }
+        .alert.success {
+            background-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+<div class="alert info" style="display: none;" id="touch-alert"><strong>Touch</strong> your Authentication device</div>
+<div class="alert success" style="display: none;" id="register-success-alert"><strong>Registration</strong> completed</div>
+<div class="alert success" style="display: none;" id="login-success-alert"><strong>Login</strong> success</div>
+
+<div class="container">
+    <div><h1>Web Authentication API Demo</h1></div>
+    <div class="row">
+
+        <div class="column" id="registerContainer">
+            <div class="register">
+                <h3>Register page</h3>
+                <form id="register" th:action="${action}">
+                    <fieldset>
+                        <label for="username">username</label>
+                        <input type="text" id="username" name="username">
+                        <span id="platform-support" style="display: none;"><input type="radio" name="type" value="platform"> Platform (Finger print, Machine authn)<br></span>
+                        <input type="radio" name="type" value="cross-platform" checked="checked"> Cross Platform (Security key)<br>
+                        <input class="button-primary" type="submit" value="Register">
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+
+        <div class="column" id="loginContainer">
+            <div class="login">
+                <h3>Login page</h3>
+                <form id="login" th:action="${action}">
+                    <fieldset>
+                        <label for="username">username</label>
+                        <input type="text" name="username">
+                        <input class="button-primary" type="submit" value="Login">
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script th:src="@{../assets/js/helpers.js}"></script>
+<script th:src="@{../assets/js/base64url-arraybuffer.js}"></script>
+<script th:src="@{../assets/js/webauthn.auth.js}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        let platformAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (platformAvailable) {
+            document.getElementById('platform-support').style.display = 'block'
+        }
+    })
+</script>
+</body>
+</html>

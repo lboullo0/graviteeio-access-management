@@ -112,6 +112,44 @@ public class UserAuthenticationManagerImpl implements UserAuthenticationManager 
     }
 
     @Override
+    public Single<User> authenticate(Client client, String username) {
+        logger.debug("Trying to authenticate user (passwordless) [{}]", username);
+
+        // Get identity providers associated to a client
+        // For each idp, try to authenticate a user
+        // Try to authenticate while the user can not be authenticated
+        // If user can't be authenticated, send an exception
+        if (client.getIdentities() == null || client.getIdentities().isEmpty()) {
+            logger.error("No identity provider found for client : " + client.getClientId());
+            return Single.error(new InternalAuthenticationServiceException("No identity provider found for client : " + client.getClientId()));
+        }
+
+        return Observable.fromIterable(client.getIdentities())
+                .flatMapMaybe(authProvider -> authenticate0(client, username, authProvider))
+                .takeUntil(userAuthentication -> userAuthentication.getUser() != null || userAuthentication.getLastException() instanceof AccountLockedException)
+                .lastOrError()
+                .flatMap(userAuthentication -> {
+                    io.gravitee.am.identityprovider.api.User user = userAuthentication.getUser();
+                    if (user == null) {
+                        Throwable lastException = userAuthentication.getLastException();
+                        if (lastException != null) {
+                            if (lastException instanceof UsernameNotFoundException) {
+                                return Single.error(new UsernameNotFoundException("Invalid or unknown user"));
+                            } else {
+                                logger.error("An error occurs during user authentication", lastException);
+                                return Single.error(new InternalAuthenticationServiceException("Unable to validate credentials. The user account you are trying to access may be experiencing a problem.", lastException));
+                            }
+                        } else {
+                            return Single.error(new UsernameNotFoundException("No user found for registered providers"));
+                        }
+                    } else {
+                        // complete user connection
+                        return connect(user);
+                    }
+                });
+    }
+
+    @Override
     public Maybe<User> loadUserByUsername(String subject) {
         return userAuthenticationService.loadPreAuthenticatedUser(subject);
     }
@@ -143,6 +181,28 @@ public class UserAuthenticationManagerImpl implements UserAuthenticationManager 
                     return Maybe.just(new UserAuthentication(null, error));
                 })
                 .flatMap(userAuthentication -> postAuthentication(client, authentication, authProvider, userAuthentication).andThen(Maybe.just(userAuthentication)));
+    }
+
+    private Maybe<UserAuthentication> authenticate0(Client client, String username, String authProvider) {
+        return identityProviderManager.get(authProvider)
+                .switchIfEmpty(Maybe.error(new BadCredentialsException("Unable to load authentication provider " + authProvider + ", an error occurred during the initialization stage")))
+                .flatMap(authenticationProvider -> {
+                    logger.debug("Authentication attempt using identity provider {} ({})", authenticationProvider, authenticationProvider.getClass().getName());
+                    return authenticationProvider.loadUserByUsername(username)
+                            .switchIfEmpty(Maybe.error(new UsernameNotFoundException(username)));
+                })
+                .map(user -> {
+                    logger.debug("Successfully Authenticated: " + username + " with provider authentication provider " + authProvider);
+                    Map<String, Object> additionalInformation = user.getAdditionalInformation() == null ? new HashMap<>() : new HashMap<>(user.getAdditionalInformation());
+                    additionalInformation.put("source", authProvider);
+                    additionalInformation.put(Parameters.CLIENT_ID, client.getId());
+                    ((DefaultUser ) user).setAdditionalInformation(additionalInformation);
+                    return new UserAuthentication(user, null);
+                })
+                .onErrorResumeNext(error -> {
+                    logger.debug("Unable to authenticate [{}] with authentication provider [{}]", username, authProvider, error);
+                    return Maybe.just(new UserAuthentication(null, error));
+                });
     }
 
     private Completable preAuthentication(Client client, Authentication authentication, String source) {

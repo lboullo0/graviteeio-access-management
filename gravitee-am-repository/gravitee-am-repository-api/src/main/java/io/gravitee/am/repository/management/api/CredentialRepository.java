@@ -13,30 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.am.gateway.handler.common.auth.user;
+package io.gravitee.am.repository.management.api;
 
-import io.gravitee.am.identityprovider.api.Authentication;
-import io.gravitee.am.model.oidc.Client;
-import io.gravitee.am.model.User;
-import io.reactivex.Maybe;
+import io.gravitee.am.model.Credential;
+import io.gravitee.am.repository.common.CrudRepository;
 import io.reactivex.Single;
 
+import java.util.List;
+
 /**
- * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author Titouan COMPIEGNE (titouan.compiegne at graviteesource.com)
  * @author GraviteeSource Team
  */
-public interface UserAuthenticationManager {
+public interface CredentialRepository extends CrudRepository<Credential, String> {
 
-    Single<User> authenticate(Client client, Authentication authentication);
+    Single<List<Credential>> findByUsername(String username);
 
-    Single<User> authenticate(Client client, String username);
-
-    Maybe<User> loadUserByUsername(String subject);
-
-    Single<User> connect(io.gravitee.am.identityprovider.api.User user, boolean afterAuthentication);
-
-    default Single<User> connect(io.gravitee.am.identityprovider.api.User user) {
-        return connect(user, true);
-    }
+    Single<List<Credential>> findByCredentialID(String credID);
 }

@@ -41,6 +41,9 @@ import io.gravitee.am.gateway.handler.root.resources.endpoint.user.register.Regi
 import io.gravitee.am.gateway.handler.root.resources.endpoint.user.register.RegisterConfirmationSubmissionEndpoint;
 import io.gravitee.am.gateway.handler.root.resources.endpoint.user.register.RegisterEndpoint;
 import io.gravitee.am.gateway.handler.root.resources.endpoint.user.register.RegisterSubmissionEndpoint;
+import io.gravitee.am.gateway.handler.root.resources.endpoint.webauthn.WebAuthnLoginEndpoint;
+import io.gravitee.am.gateway.handler.root.resources.endpoint.webauthn.WebAuthnRegisterEndpoint;
+import io.gravitee.am.gateway.handler.root.resources.endpoint.webauthn.WebAuthnResponseEndpoint;
 import io.gravitee.am.gateway.handler.root.resources.handler.client.ClientRequestParseHandler;
 import io.gravitee.am.gateway.handler.root.resources.handler.error.ErrorHandler;
 import io.gravitee.am.gateway.handler.root.resources.handler.login.*;
@@ -53,6 +56,7 @@ import io.gravitee.am.gateway.handler.root.resources.handler.user.register.Regis
 import io.gravitee.am.gateway.handler.root.resources.handler.user.register.RegisterConfirmationSubmissionRequestParseHandler;
 import io.gravitee.am.gateway.handler.root.resources.handler.user.register.RegisterSubmissionRequestParseHandler;
 import io.gravitee.am.gateway.handler.root.service.user.UserService;
+import io.gravitee.am.gateway.handler.vertx.auth.webauthn.WebAuthn;
 import io.gravitee.am.model.Domain;
 import io.gravitee.am.service.AuditService;
 import io.gravitee.am.service.TokenService;
@@ -60,6 +64,9 @@ import io.gravitee.am.service.authentication.crypto.password.PasswordValidator;
 import io.gravitee.common.service.AbstractService;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.ext.auth.webauthn.CredentialStore;
+import io.vertx.ext.auth.webauthn.RelayParty;
+import io.vertx.ext.auth.webauthn.WebAuthnOptions;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
@@ -125,6 +132,9 @@ public class RootProvider extends AbstractService<ProtocolProvider> implements P
 
     @Autowired
     private FactorManager factorManager;
+
+    @Autowired
+    private CredentialStore credentialStore;
 
     @Override
     protected void doStart() throws Exception {
@@ -195,6 +205,35 @@ public class RootProvider extends AbstractService<ProtocolProvider> implements P
         rootRouter.route("/mfa/challenge")
                 .handler(clientRequestParseHandler)
                 .handler(new MFAChallengeEndpoint(factorManager, userService, thymeleafTemplateEngine));
+
+        // create the webauthn security object
+        WebAuthn webAuthN = WebAuthn.create(
+                vertx.getDelegate(),
+                new WebAuthnOptions()
+                        .setOrigin("http://localhost:8092")
+                        .setRelayParty(
+                                new RelayParty()
+                                        .setName("Vert.x WebAuthN Demo"))
+                // What kind of authentication do you want? do you care? if you care you can specify it
+                // # security keys
+                // .setAuthenticatorAttachment(AuthenticatorAttachment.CROSS_PLATFORM)
+                // .setRequireResidentKey(false)
+                // # fingerprint
+                // .setAuthenticatorAttachment(AuthenticatorAttachment.PLATFORM)
+                // .setRequireResidentKey(false)
+                // .setUserVerification(UserVerification.REQUIRED)
+                ,
+                credentialStore);
+
+        // WebAuthn route
+        rootRouter.route("/webauthn/register")
+                .handler(clientRequestParseHandler)
+                .handler(new WebAuthnRegisterEndpoint(userAuthenticationManager, webAuthN, thymeleafTemplateEngine));
+        rootRouter.post("/webauthn/response")
+                .handler(new WebAuthnResponseEndpoint(webAuthN));
+        rootRouter.route("/webauthn/login")
+                .handler(clientRequestParseHandler)
+                .handler(new WebAuthnLoginEndpoint(webAuthN, thymeleafTemplateEngine));
 
         // logout route
         rootRouter.route("/logout").handler(new LogoutEndpoint(domain, tokenService, auditService));
@@ -296,6 +335,17 @@ public class RootProvider extends AbstractService<ProtocolProvider> implements P
         // Reset password endpoint
         router
                 .route("/resetPassword")
+                .handler(sessionHandler);
+
+        // WebAuthn endpoint
+        router
+                .route("/webauthn/register")
+                .handler(sessionHandler);
+        router
+                .route("/webauthn/response")
+                .handler(sessionHandler);
+        router
+                .route("/webauthn/login")
                 .handler(sessionHandler);
     }
 

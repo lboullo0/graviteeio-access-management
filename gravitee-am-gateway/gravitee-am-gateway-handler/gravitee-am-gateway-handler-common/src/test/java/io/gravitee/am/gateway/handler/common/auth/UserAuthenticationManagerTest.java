@@ -75,7 +75,22 @@ public class UserAuthenticationManagerTest {
         client.setClientId("client-id");
         client.setIdentities(Collections.emptySet());
 
-        TestObserver<User> observer = userAuthenticationManager.authenticate(client, null).test();
+        TestObserver<User> observer = userAuthenticationManager.authenticate(client, new Authentication() {
+            @Override
+            public Object getCredentials() {
+                return null;
+            }
+
+            @Override
+            public Object getPrincipal() {
+                return null;
+            }
+
+            @Override
+            public AuthenticationContext getContext() {
+                return null;
+            }
+        }).test();
         observer.assertNotComplete();
         observer.assertError(InternalAuthenticationServiceException.class);
         verifyZeroInteractions(userAuthenticationService);
