@@ -16,7 +16,7 @@
 import 'polyfills';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { NgModule } from '@angular/core';
+import { NgModule, APP_INITIALIZER } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import {
@@ -69,6 +69,7 @@ import { ProviderFormComponent } from './domain/settings/providers/provider/form
 import { CreateRoleMapperComponent, ProviderRolesComponent } from 'app/domain/settings/providers/provider/roles/roles.component';
 import { ProviderService } from './services/provider.service';
 import { OrganizationService } from './services/organization.service';
+import {EnvironmentService} from "./services/environment.service";
 import { AuthService } from './services/auth.service';
 import { AppConfig } from '../config/app.config';
 import { LogoutComponent } from './logout/logout.component';
@@ -277,6 +278,9 @@ import { ApplicationResourceComponent } from './domain/applications/application/
 import { ApplicationResourceResolver } from './resolvers/application-resource.resolver';
 import { ApplicationResourcePolicyComponent } from './domain/applications/application/advanced/resources/resource/policies/policy/policy.component';
 import { ApplicationResourcePolicyResolver } from './resolvers/application-resource-policy.resolver';
+import {Observable} from "rxjs";
+import {userError} from "@angular/compiler-cli/src/transformers/util";
+import {flatMap, map} from "rxjs/operators";
 
 @NgModule({
   declarations: [
@@ -471,6 +475,7 @@ import { ApplicationResourcePolicyResolver } from './resolvers/application-resou
     DialogService,
     SnackbarService,
     OrganizationService,
+    EnvironmentService,
     AuthService,
     CertificateService,
     RoleService,
@@ -539,7 +544,13 @@ import { ApplicationResourcePolicyResolver } from './resolvers/application-resou
       provide: HTTP_INTERCEPTORS,
       useClass: HttpRequestInterceptor,
       multi: true
-    }
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initCurrentUser,
+      multi: true,
+      deps: [AuthService]
+    },
   ],
   entryComponents: [
     ConfirmComponent,
@@ -563,3 +574,11 @@ import { ApplicationResourcePolicyResolver } from './resolvers/application-resou
   bootstrap: [AppComponent]
 })
 export class AppModule { }
+
+export function initCurrentUser(authService: AuthService): () => Promise<any> {
+  return (): Promise<any> => {
+    return authService.userInfo()
+      .toPromise()
+      .catch(reason => null);
+  };
+}

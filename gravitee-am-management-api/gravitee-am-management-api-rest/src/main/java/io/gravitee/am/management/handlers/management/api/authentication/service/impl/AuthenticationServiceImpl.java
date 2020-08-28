@@ -51,8 +51,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     /**
      * Constant to use while setting identity provider used to authenticate a user
      */
-    private static final String SOURCE = "source";
-    private static final String CLIENT_ID = "admin";
+    public static final String SOURCE = "source";
 
     @Autowired
     private UserService userService;
@@ -71,17 +70,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         final DefaultUser principal = (DefaultUser) auth.getPrincipal();
 
         final EndUserAuthentication authentication = new EndUserAuthentication(principal.getUsername(), null, new SimpleAuthenticationContext());
-        Map<String, String> details = auth.getDetails() == null ? new HashMap<>() : new HashMap<>((Map) auth.getDetails());
-        details.forEach(authentication.getContext()::set);
-        authentication.getContext().set(Claims.organization, Organization.DEFAULT);
+        Map<String, String> details = auth.getDetails() == null ? new HashMap<>() : new HashMap<>((Map<String, String>) auth.getDetails());
+
+        details.putIfAbsent(Claims.organization, Organization.DEFAULT);
+
+        String organizationId = details.get(Claims.organization);
 
         final String source = details.get(SOURCE);
-        io.gravitee.am.model.User endUser = userService.findByExternalIdAndSource(ReferenceType.ORGANIZATION, Organization.DEFAULT, principal.getId(), source)
-                .switchIfEmpty(Maybe.defer(() -> userService.findByUsernameAndSource(ReferenceType.ORGANIZATION, Organization.DEFAULT, principal.getUsername(), source)))
+        io.gravitee.am.model.User endUser = userService.findByExternalIdAndSource(ReferenceType.ORGANIZATION, organizationId, principal.getId(), source)
+                .switchIfEmpty(Maybe.defer(() -> userService.findByUsernameAndSource(ReferenceType.ORGANIZATION, organizationId, principal.getUsername(), source)))
                 .switchIfEmpty(Maybe.error(new UserNotFoundException(principal.getUsername())))
                 .flatMapSingle(existingUser -> {
                     existingUser.setSource(details.get(SOURCE));
-                    existingUser.setClient(CLIENT_ID);
                     existingUser.setLoggedAt(new Date());
                     existingUser.setLoginsCount(existingUser.getLoginsCount() + 1);
                     // set roles
@@ -99,11 +99,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     if (ex instanceof UserNotFoundException) {
                         final io.gravitee.am.model.User newUser = new io.gravitee.am.model.User();
                         newUser.setInternal(false);
+                        newUser.setExternalId(principal.getId());
                         newUser.setUsername(principal.getUsername());
                         newUser.setSource(details.get(SOURCE));
-                        newUser.setClient(CLIENT_ID);
                         newUser.setReferenceType(ReferenceType.ORGANIZATION);
-                        newUser.setReferenceId(Organization.DEFAULT);
+                        newUser.setReferenceId(organizationId);
                         newUser.setLoggedAt(new Date());
                         newUser.setLoginsCount(1l);
                         newUser.setAdditionalInformation(principal.getAdditionalInformation());
@@ -114,7 +114,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     return Single.error(ex);
                 })
                 .flatMap(userService::enhance)
-                .doOnSuccess(user -> auditService.report(AuditBuilder.builder(AuthenticationAuditBuilder.class).principal(authentication).referenceType(ReferenceType.ORGANIZATION).referenceId(Organization.DEFAULT).client(CLIENT_ID).user(user)))
+                .doOnSuccess(user -> auditService.report(AuditBuilder.builder(AuthenticationAuditBuilder.class).principal(authentication).referenceType(ReferenceType.ORGANIZATION)
+                        .referenceId(organizationId).user(user)))
                 .blockingGet();
 
         principal.setId(endUser.getId());

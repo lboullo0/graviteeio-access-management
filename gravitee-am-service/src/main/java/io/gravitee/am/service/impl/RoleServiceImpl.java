@@ -378,23 +378,24 @@ public class RoleServiceImpl implements RoleService {
         List<Role> roles = new ArrayList<>();
 
         // Create PRIMARY_OWNER roles and PLATFORM_ADMIN role.
-        Map<Permission, Set<Acl>> organizationAdminPermissions = Permission.allPermissionAcls(ReferenceType.ORGANIZATION);
-        Map<Permission, Set<Acl>> platformAdminPermissions = Permission.allPermissionAcls(ReferenceType.PLATFORM);
-        Map<Permission, Set<Acl>> domainAdminPermissions = Permission.allPermissionAcls(ReferenceType.DOMAIN);
-        Map<Permission, Set<Acl>> applicationAdminPermissions = Permission.allPermissionAcls(ReferenceType.APPLICATION);
+        Map<Permission, Set<Acl>> organizationPrimaryOwnerPermissions = Permission.allPermissionAcls(ReferenceType.ORGANIZATION);
+        Map<Permission, Set<Acl>> platformPrimaryOwnerPermissions = Permission.allPermissionAcls(ReferenceType.PLATFORM);
+        Map<Permission, Set<Acl>> domainPrimaryOwnerPermissions = Permission.allPermissionAcls(ReferenceType.DOMAIN);
+        Map<Permission, Set<Acl>> applicationPrimaryOwnerPermissions = Permission.allPermissionAcls(ReferenceType.APPLICATION);
 
-        organizationAdminPermissions.put(Permission.ORGANIZATION, Acl.of(READ));
-        organizationAdminPermissions.put(Permission.ORGANIZATION_SETTINGS, Acl.of(READ, UPDATE));
-        organizationAdminPermissions.put(Permission.ORGANIZATION_AUDIT, Acl.of(READ, LIST));
+        organizationPrimaryOwnerPermissions.put(Permission.ORGANIZATION, Acl.of(READ));
+        organizationPrimaryOwnerPermissions.put(Permission.ORGANIZATION_SETTINGS, Acl.of(READ, UPDATE));
+        organizationPrimaryOwnerPermissions.put(Permission.ORGANIZATION_AUDIT, Acl.of(READ, LIST));
+        organizationPrimaryOwnerPermissions.put(Permission.ENVIRONMENT, Acl.of(LIST));
 
-        domainAdminPermissions.put(Permission.DOMAIN, Acl.of(READ, UPDATE, LIST, DELETE));
-        domainAdminPermissions.put(Permission.DOMAIN_SETTINGS, Acl.of(READ, UPDATE));
-        domainAdminPermissions.put(Permission.DOMAIN_AUDIT, Acl.of(READ, LIST));
+        domainPrimaryOwnerPermissions.put(Permission.DOMAIN, Acl.of(READ, UPDATE, LIST, DELETE));
+        domainPrimaryOwnerPermissions.put(Permission.DOMAIN_SETTINGS, Acl.of(READ, UPDATE));
+        domainPrimaryOwnerPermissions.put(Permission.DOMAIN_AUDIT, Acl.of(READ, LIST));
 
-        roles.add(buildSystemRole(SystemRole.PLATFORM_ADMIN.name(), ReferenceType.PLATFORM, platformAdminPermissions));
-        roles.add(buildSystemRole(SystemRole.ORGANIZATION_PRIMARY_OWNER.name(), ReferenceType.ORGANIZATION, organizationAdminPermissions));
-        roles.add(buildSystemRole(SystemRole.DOMAIN_PRIMARY_OWNER.name(), ReferenceType.DOMAIN, domainAdminPermissions));
-        roles.add(buildSystemRole(SystemRole.APPLICATION_PRIMARY_OWNER.name(), ReferenceType.APPLICATION, applicationAdminPermissions));
+        roles.add(buildSystemRole(SystemRole.PLATFORM_ADMIN.name(), ReferenceType.PLATFORM, platformPrimaryOwnerPermissions));
+        roles.add(buildSystemRole(SystemRole.ORGANIZATION_PRIMARY_OWNER.name(), ReferenceType.ORGANIZATION, organizationPrimaryOwnerPermissions));
+        roles.add(buildSystemRole(SystemRole.DOMAIN_PRIMARY_OWNER.name(), ReferenceType.DOMAIN, domainPrimaryOwnerPermissions));
+        roles.add(buildSystemRole(SystemRole.APPLICATION_PRIMARY_OWNER.name(), ReferenceType.APPLICATION, applicationPrimaryOwnerPermissions));
 
         return roles;
     }
@@ -429,8 +430,7 @@ public class RoleServiceImpl implements RoleService {
         organizationUserPermissions.put(Permission.ORGANIZATION_GROUP, Acl.of(LIST));
         organizationUserPermissions.put(Permission.ORGANIZATION_ROLE, Acl.of(LIST));
         organizationUserPermissions.put(Permission.ORGANIZATION_TAG, Acl.of(LIST));
-        // Note : for now, there is only one 'DEFAULT' environment which is not known by AM users. Give read permission on all organization's environment in order to make things work.
-        organizationUserPermissions.put(Permission.DOMAIN, Acl.of(LIST));
+        organizationUserPermissions.put(Permission.ENVIRONMENT, Acl.of(LIST));
 
         domainUserPermissions.put(Permission.DOMAIN, Acl.of(READ));
         domainUserPermissions.put(Permission.DOMAIN_SCOPE, Acl.of(LIST));

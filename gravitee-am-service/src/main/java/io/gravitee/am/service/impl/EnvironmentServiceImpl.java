@@ -69,6 +69,13 @@ public class EnvironmentServiceImpl implements EnvironmentService {
     }
 
     @Override
+    public Flowable<Environment> findAll(String organizationId) {
+
+        LOGGER.debug("Find environments by organizationId: {}", organizationId);
+        return environmentRepository.findAll(organizationId);
+    }
+
+    @Override
     public Maybe<Environment> createDefault() {
 
         Environment environment = new Environment();
